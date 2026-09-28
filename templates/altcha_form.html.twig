@@ -1,0 +1,12 @@
+{% block altcha_widget %}
+    {# auto: onload = solve on page load (invisible), onsubmit = solve on form submit, absent = manual checkbox (default). #}
+    <altcha-widget
+        challenge="{{ altcha_challenge_url }}"
+        name="{{ full_name }}"
+        {% if altcha_auto %}auto="{{ altcha_auto }}"{% endif %}
+        {% if altcha_hide_footer %}hidefooter{% endif %}
+        {% if altcha_hide_logo %}hidelogo{% endif %}>
+    </altcha-widget>
+    <script type="module" src="{{ altcha_script_url }}"></script>
+    <script type="module" src="/js/altcha-i18n.js"></script>
+{% endblock %}

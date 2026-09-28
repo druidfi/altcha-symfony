@@ -1,0 +1,29 @@
+{
+    "name": "druidfi/altcha-symfony",
+    "description": "Altcha CAPTCHA integration for Symfony — form type, validator, and self-hosted/Sentinel support",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "homepage": "https://github.com/druidfi/altcha-symfony",
+    "require": {
+        "php": ">=8.2",
+        "altcha-org/altcha": "^2.0",
+        "symfony/form": "^7.0",
+        "symfony/framework-bundle": "^7.0",
+        "symfony/http-foundation": "^7.0",
+        "symfony/routing": "^7.0",
+        "symfony/validator": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Druidfi\\AltchaSymfony\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Druidfi\\AltchaSymfony\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
