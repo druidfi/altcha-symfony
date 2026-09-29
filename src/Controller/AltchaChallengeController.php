@@ -7,6 +7,13 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Serves proof-of-work challenges for self-hosted mode.
+ *
+ * In sentinel mode the widget fetches challenges directly from the Sentinel API,
+ * so this endpoint is never called — but it remains registered and harmless.
+ * Ensure this route is publicly accessible (no firewall restriction).
+ */
 class AltchaChallengeController
 {
     public function __construct(private readonly AltchaService $altchaService) {}

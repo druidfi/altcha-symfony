@@ -22,6 +22,8 @@ All variables are defined in `.env`. Override them per environment in `.env.loca
 | Variable | Default | Description |
 |---|---|---|
 | `ALTCHA_HMAC_KEY` | `dev-only-hmac-key-change-in-production` | HMAC secret for signing challenges. **Must be changed in production.** |
+| `ALTCHA_ENABLED` | _(empty)_ | Set to `false` or `0` to disable CAPTCHA validation entirely. Useful in test/dev environments. |
+| `ALTCHA_COST` | `50000` | PBKDF2 iteration count for proof-of-work challenges. Higher = harder for bots, slower for users. |
 | `ALTCHA_SENTINEL_URL` | _(empty)_ | Set to enable Sentinel/cloud mode. Challenge URL handed to the widget. |
 | `ALTCHA_SENTINEL_VERIFY_URL` | _(empty)_ | Optional override for the Sentinel verify endpoint. Derived from `ALTCHA_SENTINEL_URL` if omitted. |
 | `ALTCHA_SENTINEL_API_KEY` | _(empty)_ | API key for the Sentinel verify call (if required by your Sentinel plan). |
@@ -29,6 +31,7 @@ All variables are defined in `.env`. Override them per environment in `.env.loca
 | `ALTCHA_HIDE_LOGO` | `true` | Hide the Altcha logo in the widget. |
 | `ALTCHA_SCRIPT_URL` | `/js/altcha.js` | URL to the Altcha widget JS. Use `/js/altcha.js` for the vendored local copy or a CDN URL. |
 | `ALTCHA_AUTO` | _(empty)_ | Auto-solve mode: `onload` (invisible, solves on page load), `onsubmit` (solves on form submit), or empty for manual checkbox (default). |
+| `ALTCHA_FLOATING` | _(empty)_ | Set to `true` or `1` to show the widget as a floating badge instead of an inline element. |
 
 ## Modes
 
@@ -53,6 +56,14 @@ $builder->add('altcha', AltchaType::class);
 ```
 
 The form type renders the widget via `templates/altcha_form.html.twig` and automatically attaches an `AltchaValid` constraint. No extra configuration is needed.
+
+To show the floating badge style on a specific form, pass the `floating` option:
+
+```php
+$builder->add('altcha', AltchaType::class, ['floating' => true]);
+```
+
+This overrides `ALTCHA_FLOATING` for that field only.
 
 ## Translations
 
