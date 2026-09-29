@@ -33,6 +33,8 @@ class AltchaService
         private readonly ?string $sentinelVerifyUrl = null,
         #[Autowire(value: '%env(default::ALTCHA_SENTINEL_API_KEY)%')]
         private readonly ?string $sentinelApiKey = null,
+        #[Autowire(value: '%env(default::ALTCHA_COST)%')]
+        private readonly ?string $cost = null,
     ) {
         $this->altcha = new Altcha(hmacSignatureSecret: $this->hmacKey);
     }
@@ -48,30 +50,51 @@ class AltchaService
      */
     public function getChallengeUrl(string $localUrl): string
     {
-        return $this->isSentinel() ? ($this->sentinelUrl ?? '') : $localUrl;
+        // isSentinel() guarantees sentinelUrl is non-null and non-empty here.
+        return $this->isSentinel() ? $this->sentinelUrl : $localUrl;
     }
 
+    /**
+     * Creates a new proof-of-work challenge.
+     *
+     * Cost is controlled by ALTCHA_COST (default 50 000 PBKDF2 iterations).
+     * Higher values increase bot resistance but also increase solve time for real users.
+     * Challenges expire after 10 minutes to prevent replay attacks.
+     */
     public function createChallenge(): Challenge
     {
         return $this->altcha->createChallenge(new CreateChallengeOptions(
             algorithm: new Pbkdf2(),
-            // 50 000 PBKDF2 iterations: high enough to slow bots, fast enough for real users (~1 s on modern hardware).
-            cost: 50000,
-            // Challenges expire after 10 minutes to prevent reuse of old solved payloads.
+            cost: $this->resolveCost(),
             expiresAt: time() + 600,
         ));
     }
 
+    /**
+     * Verifies a payload submitted by the altcha-widget.
+     *
+     * In self-hosted mode: HMAC + PBKDF2 verification happens locally, no network call.
+     * In sentinel mode: payload is forwarded to the Sentinel API for verification.
+     *
+     * Returns false on any verification failure, malformed payload, or network error
+     * so callers always receive a bool and never a thrown exception.
+     */
     public function verify(string $payload): bool
     {
         if ($this->isSentinel()) {
-            $verifyUrl = ($this->sentinelVerifyUrl !== null && $this->sentinelVerifyUrl !== '') ? $this->sentinelVerifyUrl : $this->deriveSentinelVerifyUrl();
+            $verifyUrl = ($this->sentinelVerifyUrl !== null && $this->sentinelVerifyUrl !== '')
+                ? $this->sentinelVerifyUrl
+                : $this->deriveSentinelVerifyUrl();
+
+            $secret = ($this->sentinelApiKey !== null && $this->sentinelApiKey !== '')
+                ? $this->sentinelApiKey
+                : null;
 
             try {
                 $result = Sentinel::verify(new VerifyServerOptions(
                     payload: $payload,
                     url: $verifyUrl,
-                    secret: ($this->sentinelApiKey !== null && $this->sentinelApiKey !== '') ? $this->sentinelApiKey : null,
+                    secret: $secret,
                 ));
             } catch (\Throwable) {
                 // Network errors or sentinel API failures return false so the form shows
@@ -97,8 +120,26 @@ class AltchaService
     }
 
     /**
+     * Resolves the PBKDF2 cost from ALTCHA_COST, falling back to 50 000.
+     * Non-numeric and non-positive values are ignored and the default is used instead.
+     */
+    private function resolveCost(): int
+    {
+        if ($this->cost !== null && $this->cost !== '') {
+            $parsed = (int) $this->cost;
+            if ($parsed > 0) {
+                return $parsed;
+            }
+        }
+
+        return 50000;
+    }
+
+    /**
      * Derives a verify URL from the sentinel challenge URL as a fallback.
      * e.g. https://eu.altcha.org/api/v1/challenge?apiKey=xxx -> https://eu.altcha.org/api/v1/verify/signature
+     *
+     * Only safe to call when isSentinel() is true (sentinelUrl is guaranteed non-empty).
      */
     private function deriveSentinelVerifyUrl(): string
     {

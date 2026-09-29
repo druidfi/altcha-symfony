@@ -32,6 +32,8 @@ class AltchaType extends AbstractType
         private readonly string $scriptUrl,
         #[Autowire(value: '%env(default::ALTCHA_AUTO)%')]
         private readonly ?string $auto = null,
+        #[Autowire(value: '%env(default::ALTCHA_FLOATING)%')]
+        private readonly ?string $floating = null,
     ) {}
 
     public function buildView(FormView $view, FormInterface $form, array $options): void
@@ -43,6 +45,9 @@ class AltchaType extends AbstractType
         $view->vars['altcha_hide_logo'] = $this->hideLogo;
         $view->vars['altcha_script_url'] = $this->scriptUrl;
         $view->vars['altcha_auto'] = $this->auto;
+        // Per-field option takes precedence; fall back to ALTCHA_FLOATING env var.
+        // $options['floating'] is always set by the resolver (default null), so ?? triggers only when null.
+        $view->vars['altcha_floating'] = $options['floating'] ?? $this->resolveFloating();
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -54,7 +59,9 @@ class AltchaType extends AbstractType
             // validation via AltchaValid handles the actual requirement.
             'required' => false,
             'constraints' => [new AltchaValid()],
+            'floating' => null,
         ]);
+        $resolver->setAllowedTypes('floating', ['bool', 'null']);
     }
 
     public function getParent(): string
@@ -65,5 +72,16 @@ class AltchaType extends AbstractType
     public function getBlockPrefix(): string
     {
         return 'altcha';
+    }
+
+    /**
+     * Resolves ALTCHA_FLOATING env var to a bool.
+     * Returns true only for explicit truthy values ('true', '1'); absent or empty means false.
+     */
+    private function resolveFloating(): bool
+    {
+        return $this->floating !== null
+            && $this->floating !== ''
+            && in_array(strtolower($this->floating), ['true', '1'], true);
     }
 }
