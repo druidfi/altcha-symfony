@@ -24,9 +24,10 @@ All variables are defined in `.env`. Override them per environment in `.env.loca
 | `ALTCHA_HMAC_KEY` | `dev-only-hmac-key-change-in-production` | HMAC secret for signing challenges. **Must be changed in production.** |
 | `ALTCHA_ENABLED` | _(empty)_ | Set to `false` or `0` to disable CAPTCHA validation entirely. Useful in test/dev environments. |
 | `ALTCHA_COST` | `50000` | PBKDF2 iteration count for proof-of-work challenges. Higher = harder for bots, slower for users. |
-| `ALTCHA_SENTINEL_URL` | _(empty)_ | Set to enable Sentinel/cloud mode. Challenge URL handed to the widget. |
+| `ALTCHA_SENTINEL_URL` | _(empty)_ | Set to enable Sentinel/cloud mode. Base challenge URL handed to the widget. |
 | `ALTCHA_SENTINEL_VERIFY_URL` | _(empty)_ | Optional override for the Sentinel verify endpoint. Derived from `ALTCHA_SENTINEL_URL` if omitted. |
-| `ALTCHA_SENTINEL_API_KEY` | _(empty)_ | API key for the Sentinel verify call (if required by your Sentinel plan). |
+| `ALTCHA_SENTINEL_API_KEY` | _(empty)_ | API key appended to `ALTCHA_SENTINEL_URL` as `?apiKey=`. Allows the URL and key to be stored as separate secrets. |
+| `ALTCHA_SENTINEL_API_SECRET` | _(empty)_ | API secret sent in the Sentinel verify request body. Distinct from the API key. |
 | `ALTCHA_HIDE_FOOTER` | `true` | Hide the "Powered by Altcha" footer in the widget. |
 | `ALTCHA_HIDE_LOGO` | `true` | Hide the Altcha logo in the widget. |
 | `ALTCHA_SCRIPT_URL` | `/js/altcha.js` | URL to the Altcha widget JS. Use `/js/altcha.js` for the vendored local copy or a CDN URL. |
@@ -41,16 +42,18 @@ All three `ALTCHA_SENTINEL_*` variables are empty. The widget fetches a challeng
 
 ### Sentinel / cloud
 
-Set `ALTCHA_SENTINEL_URL` to your Sentinel challenge URL (e.g. `https://eu.altcha.org/api/v1/challenge?apiKey=xxx`). The widget uses this URL directly. On form submit, the server calls the Sentinel verify endpoint instead of doing local HMAC verification.
+Set `ALTCHA_SENTINEL_URL` to your Sentinel challenge base URL (e.g. `https://eu.altcha.org/api/v1/challenge`). Set `ALTCHA_SENTINEL_API_KEY` to your API key — it will be appended as `?apiKey=` automatically. This allows the URL and key to be stored as separate secrets in a vault. Alternatively, you can embed the key directly in `ALTCHA_SENTINEL_URL` and leave `ALTCHA_SENTINEL_API_KEY` empty.
 
 `ALTCHA_SENTINEL_VERIFY_URL` is optional — if omitted, the verify URL is derived from `ALTCHA_SENTINEL_URL` by replacing the path with `/api/v1/verify/signature`.
+
+`ALTCHA_SENTINEL_API_SECRET` is the API secret sent in the verify request body (`secret` field). It is separate from the API key.
 
 ## Usage in a form
 
 Add the field to any Symfony form class:
 
 ```php
-use App\Form\Type\AltchaType;
+use Druidfi\AltchaSymfony\Form\Type\AltchaType;
 
 $builder->add('altcha', AltchaType::class);
 ```
