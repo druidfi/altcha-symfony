@@ -7,9 +7,11 @@
     "require": {
         "php": ">=8.2",
         "altcha-org/altcha": "^2.0",
+        "symfony/dependency-injection": "^7.0|^8.0",
         "symfony/form": "^7.0|^8.0",
         "symfony/framework-bundle": "^7.0|^8.0",
         "symfony/http-foundation": "^7.0|^8.0",
+        "symfony/http-kernel": "^7.0|^8.0",
         "symfony/routing": "^7.0|^8.0",
         "symfony/validator": "^7.0|^8.0"
     },
