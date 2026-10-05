@@ -33,6 +33,8 @@ class AltchaService
         private readonly ?string $sentinelVerifyUrl = null,
         #[Autowire(value: '%env(default::ALTCHA_SENTINEL_API_KEY)%')]
         private readonly ?string $sentinelApiKey = null,
+        #[Autowire(value: '%env(default::ALTCHA_SENTINEL_API_SECRET)%')]
+        private readonly ?string $sentinelApiSecret = null,
         #[Autowire(value: '%env(default::ALTCHA_COST)%')]
         private readonly ?string $cost = null,
     ) {
@@ -50,8 +52,19 @@ class AltchaService
      */
     public function getChallengeUrl(string $localUrl): string
     {
-        // isSentinel() guarantees sentinelUrl is non-null and non-empty here.
-        return $this->isSentinel() ? $this->sentinelUrl : $localUrl;
+        if (!$this->isSentinel()) {
+            return $localUrl;
+        }
+
+        // Append apiKey as a query parameter if provided separately.
+        // This allows ALTCHA_SENTINEL_URL to be a plain base URL and
+        // ALTCHA_SENTINEL_API_KEY to be stored as a separate secret in the vault.
+        if ($this->sentinelApiKey !== null && $this->sentinelApiKey !== '') {
+            $separator = str_contains($this->sentinelUrl, '?') ? '&' : '?';
+            return $this->sentinelUrl . $separator . 'apiKey=' . urlencode($this->sentinelApiKey);
+        }
+
+        return $this->sentinelUrl;
     }
 
     /**
@@ -86,8 +99,8 @@ class AltchaService
                 ? $this->sentinelVerifyUrl
                 : $this->deriveSentinelVerifyUrl();
 
-            $secret = ($this->sentinelApiKey !== null && $this->sentinelApiKey !== '')
-                ? $this->sentinelApiKey
+            $secret = ($this->sentinelApiSecret !== null && $this->sentinelApiSecret !== '')
+                ? $this->sentinelApiSecret
                 : null;
 
             try {
