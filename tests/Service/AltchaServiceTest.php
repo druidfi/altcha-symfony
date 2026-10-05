@@ -16,9 +16,10 @@ class AltchaServiceTest extends TestCase
         ?string $sentinelUrl = null,
         ?string $sentinelVerifyUrl = null,
         ?string $sentinelApiKey = null,
+        ?string $sentinelApiSecret = null,
         ?string $cost = null,
     ): AltchaService {
-        return new AltchaService($hmacKey, $sentinelUrl, $sentinelVerifyUrl, $sentinelApiKey, $cost);
+        return new AltchaService($hmacKey, $sentinelUrl, $sentinelVerifyUrl, $sentinelApiKey, $sentinelApiSecret, $cost);
     }
 
     // -------------------------------------------------------------------------
@@ -61,6 +62,45 @@ class AltchaServiceTest extends TestCase
         $this->assertSame(
             '/altcha/challenge',
             $this->makeService()->getChallengeUrl('/altcha/challenge'),
+        );
+    }
+
+    public function testGetChallengeUrlAppendsApiKeyToBaseUrl(): void
+    {
+        $service = $this->makeService(
+            sentinelUrl: 'https://eu.altcha.org/api/v1/challenge',
+            sentinelApiKey: 'mykey',
+        );
+
+        $this->assertSame(
+            'https://eu.altcha.org/api/v1/challenge?apiKey=mykey',
+            $service->getChallengeUrl('/altcha/challenge'),
+        );
+    }
+
+    public function testGetChallengeUrlAppendsApiKeyWhenUrlAlreadyHasQueryString(): void
+    {
+        $service = $this->makeService(
+            sentinelUrl: 'https://eu.altcha.org/api/v1/challenge?foo=bar',
+            sentinelApiKey: 'mykey',
+        );
+
+        $this->assertSame(
+            'https://eu.altcha.org/api/v1/challenge?foo=bar&apiKey=mykey',
+            $service->getChallengeUrl('/altcha/challenge'),
+        );
+    }
+
+    public function testGetChallengeUrlIgnoresEmptyApiKey(): void
+    {
+        $service = $this->makeService(
+            sentinelUrl: 'https://eu.altcha.org/api/v1/challenge',
+            sentinelApiKey: '',
+        );
+
+        $this->assertSame(
+            'https://eu.altcha.org/api/v1/challenge',
+            $service->getChallengeUrl('/altcha/challenge'),
         );
     }
 
